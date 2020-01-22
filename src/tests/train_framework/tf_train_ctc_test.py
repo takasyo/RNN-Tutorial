@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+import sys
+sys.path.append(',')
+sys.path.append(r'/opt/Desktop/RNN-Tutorial/src')
+sys.path.append(r'/opt/Desktop/RNN-Tutorial')
 import unittest
 import os
 import logging
@@ -93,7 +97,7 @@ class TestTrain_ctc(unittest.TestCase):
         Can a small model run on the CPU?
         '''
         tf_train_ctc = self.tf_train_ctc
-        tf_train_ctc.tf_device = '/cpu:0'
+        tf_train_ctc.tf_device = '/device:GPU:1'
 
         tf_train_ctc.graph = tf.Graph()
         with tf_train_ctc.graph.as_default(), tf.device(tf_train_ctc.tf_device):

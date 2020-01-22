@@ -22,7 +22,7 @@ def variable_on_cpu(name, shape, initializer):
     used to create a variable in CPU memory.
     """
     # Use the /cpu:0 device for scoped operations
-    with tf.device('/cpu:0'):
+    with tf.device('/device:GPU:1'):
         # Create or get apropos variable
         var = tf.get_variable(name=name, shape=shape, initializer=initializer)
     return var

@@ -1,6 +1,11 @@
 #!/usr/bin/env python
+# coding:utf-8
+import sys,os
+sys.path.append('.')
+sys.path.append(r'/opt/Desktop/RNN-Tutorial')
+sys.path.append(r'/opt/Desktop/RNN-Tutorial/src')
+os.environ["RNN_TUTORIAL"] = r'/opt/Desktop/RNN-Tutorial'
 
-import os
 import numpy as np
 import time
 import warnings
@@ -105,6 +110,7 @@ class Tf_train_ctc(object):
 
         # set the session name
         self.session_name = '{}_{}'.format(
+            #self.network_type, "20190927-124345")
             self.network_type, time.strftime("%Y%m%d-%H%M%S"))
         sess_prefix_str = 'develop'
         if len(sess_prefix_str) > 0:
@@ -203,7 +209,7 @@ class Tf_train_ctc(object):
 
     def run_model(self):
         self.graph = tf.Graph()
-        with self.graph.as_default(), tf.device('/cpu:0'):
+        with self.graph.as_default(), tf.device('/device:GPU:1'):
 
             with tf.device(self.tf_device):
                 # Run multiple functions on the specificed tf_device
@@ -359,6 +365,7 @@ class Tf_train_ctc(object):
                 self.validation_and_checkpoint_check(epoch)
 
             epoch_start = time.time()
+            logger.info('Start Epoch {}'.format(epoch + 1))
 
             self.train_cost, self.train_ler = self.run_batches(
                 self.data_sets.train,
@@ -369,8 +376,7 @@ class Tf_train_ctc(object):
 
             epoch_duration = time.time() - epoch_start
 
-            log = 'Epoch {}/{}, train_cost: {:.3f}, \
-                   train_ler: {:.3f}, time: {:.2f} sec'
+            log = 'Epoch {}/{}, train_cost: {:.3f}, train_ler: {:.3f}, time: {:.2f} sec'
             logger.info(log.format(
                 epoch + 1,
                 self.epochs,
@@ -440,8 +446,7 @@ class Tf_train_ctc(object):
 
         # if this LER is not better than average of previous epochs, exit
         if history_avg_ler - dev_ler <= self.CURR_VALIDATION_LER_DIFF:
-            log = "Validation label error rate not improved by more than {:.2%} \
-                  after {} epochs. Exit"
+            log = "Validation label error rate not improved by more than {0:.2%} after {1} epochs. Exit"
             warnings.warn(log.format(self.CURR_VALIDATION_LER_DIFF,
                                      self.AVG_VALIDATION_LER_EPOCHS))
 
@@ -486,11 +491,12 @@ class Tf_train_ctc(object):
                 batch_cost, _ = self.sess.run(
                     [self.avg_loss, self.optimizer], feed)
                 self.train_cost += batch_cost * dataset._batch_size
-                logger.debug('Batch cost: %.2f | Train cost: %.2f',
-                             batch_cost, self.train_cost)
+                logger.debug('Batch cost: %.2f \t| Train cost: %.2f',
+                             batch_cost, self.train_cost / (batch + 1))
 
             self.train_ler += self.sess.run(self.ler, feed_dict=feed) * dataset._batch_size
-            logger.debug('Label error rate: %.2f', self.train_ler)
+            logger.debug('epoch:%2d %5d/%5d \t| Label error rate: %.2f', 
+                         epoch + 1, batch + 1, n_batches_per_epoch, self.train_ler / (batch + 1))
 
             # Turn on decode only 1 batch per epoch
             if decode and batch == 0:
@@ -528,6 +534,16 @@ class Tf_train_ctc(object):
         self.accuracy, summary_line = self.sess.run(
             [self.avg_loss, self.summary_op], feed)
         self.writer.add_summary(summary_line, epoch)
+
+        #tmp_logi, tmp_log, tmp_seq, tmp_deco = self.sess.run(
+        #    [self.logits, self.log_prob, self.seq_length, self.decoded], feed)
+        #print('\nself.logits=\n{}'.format(tmp_logi[:1,:,:]))
+        #print('\nself.log_prob=\n{}'.format(tmp_log))
+        #print('\nself.targets=\n{}'.format(tmp_log))
+        #print('\nself.seq_length=\n{}'.format(tmp_seq))
+        #print('\nself.decoded=\n{}'.format(tmp_deco))
+        #print('\ndense_decoded=\n{}'.format(dense_decoded))
+        #print('\nDecoded=\n{}'.format(ndarray_to_text(dense_decoded[0])))
 
         return self.train_cost, self.train_ler
 
